@@ -49,8 +49,16 @@ body {
 }
 
 img { max-width: 100%; height: auto; display: block; }
-a { color: inherit; text-decoration: none; }
-button { cursor: pointer; font-family: inherit; border: none; background: none; }
+a { color: inherit; text-decoration: none; touch-action: manipulation; }
+button {
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  background: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+input, select { touch-action: manipulation; }
 ul { list-style: none; }
 
 /* ── PATTERNS / DECORATIVE ────────────────────────────────── */
@@ -301,9 +309,14 @@ ul { list-style: none; }
   background: rgba(0,0,0,0.5);
   z-index: 1100;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.3s;
 }
-.mobile-menu-overlay.open { opacity: 1; }
+.mobile-menu-overlay.open {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .mobile-menu {
   position: fixed;
@@ -848,9 +861,14 @@ ul { list-style: none; }
   background: rgba(0,0,0,0.5);
   z-index: 1300;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.3s;
 }
-.cart-overlay.open { display: block; opacity: 1; }
+.cart-overlay.open {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .cart-drawer {
   position: fixed;
@@ -1168,6 +1186,7 @@ ul { list-style: none; }
   font-weight: 500;
   z-index: 2000;
   opacity: 0;
+  pointer-events: none;
   transition: all 0.3s ease;
   white-space: nowrap;
   box-shadow: 0 4px 20px rgba(0,0,0,0.25);
@@ -1554,7 +1573,7 @@ ul { list-style: none; }
   position: fixed;
   bottom: 24px;
   right: 24px;
-  z-index: 999;
+  z-index: 1050;
   width: 58px;
   height: 58px;
   border-radius: 50%;
@@ -1564,7 +1583,10 @@ ul { list-style: none; }
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
+  text-decoration: none;
   animation: floatPulse 2.5s infinite;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .floating-wa:hover {
   transform: scale(1.1);
@@ -1658,7 +1680,6 @@ ul { list-style: none; }
   .desktop-nav { display: none; }
   .header-phone { display: none; }
   .mobile-menu-toggle { display: flex; }
-  .mobile-menu-overlay { display: block; }
   .logo-tagline { display: none; }
 
   /* Hero */

@@ -5,21 +5,42 @@
  * Cart survives page refresh automatically.
  */
 
+// Safe localStorage helper
+function safeGetStorage(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    console.warn('Storage read warning:', e);
+    return null;
+  }
+}
+
+function safeSetStorage(key, val) {
+  try {
+    localStorage.setItem(key, JSON.stringify(val));
+  } catch (e) {
+    console.warn('Storage write warning:', e);
+  }
+}
+
 const Cart = {
-  // Load cart from localStorage
-  items: JSON.parse(localStorage.getItem('umeshPoojaCart')) || [],
+  // Load cart from localStorage safely
+  items: safeGetStorage('umeshPoojaCart') || [],
 
   // Save cart to localStorage
   save() {
-    localStorage.setItem('umeshPoojaCart', JSON.stringify(this.items));
+    safeSetStorage('umeshPoojaCart', this.items);
     this.updateUI();
   },
 
   // Add item to cart
   addItem(product, quantity = 1) {
+    if (!product) return;
+    const qty = Math.max(1, parseInt(quantity, 10) || 1);
     const existingIndex = this.items.findIndex(item => item.id === product.id);
     if (existingIndex > -1) {
-      this.items[existingIndex].quantity += quantity;
+      this.items[existingIndex].quantity = (this.items[existingIndex].quantity || 0) + qty;
     } else {
       this.items.push({
         id: product.id,
@@ -27,7 +48,7 @@ const Cart = {
         price: product.price,
         image: product.image,
         unit: product.unit,
-        quantity: quantity
+        quantity: qty
       });
     }
     this.save();
@@ -42,13 +63,14 @@ const Cart = {
 
   // Update item quantity
   updateQuantity(productId, newQty) {
-    if (newQty < 1) {
+    const qty = parseInt(newQty, 10);
+    if (qty < 1) {
       this.removeItem(productId);
       return;
     }
     const index = this.items.findIndex(item => item.id === productId);
     if (index > -1) {
-      this.items[index].quantity = newQty;
+      this.items[index].quantity = qty;
       this.save();
     }
   },
@@ -61,12 +83,12 @@ const Cart = {
 
   // Get total number of items
   getTotalItems() {
-    return this.items.reduce((sum, item) => sum + item.quantity, 0);
+    return this.items.reduce((sum, item) => sum + (parseInt(item.quantity, 10) || 0), 0);
   },
 
   // Get total price
   getTotalPrice() {
-    return this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return this.items.reduce((sum, item) => sum + (item.price * (parseInt(item.quantity, 10) || 0)), 0);
   },
 
   // Update all UI elements
@@ -108,7 +130,7 @@ const Cart = {
     if (drawer) {
       this.renderCartDrawer();
       drawer.classList.add('open');
-      overlay.classList.add('open');
+      if (overlay) overlay.classList.add('open');
       document.body.style.overflow = 'hidden';
     }
   },
@@ -119,12 +141,12 @@ const Cart = {
     const overlay = document.getElementById('cartOverlay');
     if (drawer) {
       drawer.classList.remove('open');
-      overlay.classList.remove('open');
+      if (overlay) overlay.classList.remove('open');
       document.body.style.overflow = '';
     }
   },
 
-  // Render cart drawer HTML
+  // Render cart drawer HTML in table format
   renderCartDrawer() {
     const cartBody = document.getElementById('cartBody');
     const cartFooter = document.getElementById('cartFooter');
@@ -158,15 +180,15 @@ const Cart = {
         </td>
         <td class="ct-qty">
           <div class="ct-qty-controls">
-            <button class="qty-btn" onclick="Cart.updateQuantity(${item.id}, ${item.quantity - 1})" aria-label="Decrease">−</button>
+            <button class="qty-btn" type="button" onclick="Cart.updateQuantity(${item.id}, ${item.quantity - 1})" aria-label="Decrease">−</button>
             <span class="qty-display">${item.quantity}</span>
-            <button class="qty-btn" onclick="Cart.updateQuantity(${item.id}, ${item.quantity + 1})" aria-label="Increase">+</button>
+            <button class="qty-btn" type="button" onclick="Cart.updateQuantity(${item.id}, ${item.quantity + 1})" aria-label="Increase">+</button>
           </div>
         </td>
         <td class="ct-rate">₹${item.price.toLocaleString('en-IN')}</td>
         <td class="ct-amount">₹${(item.price * item.quantity).toLocaleString('en-IN')}</td>
         <td class="ct-del">
-          <button class="cart-item-remove" onclick="Cart.removeItem(${item.id})" aria-label="Remove ${item.name}">✕</button>
+          <button class="cart-item-remove" type="button" onclick="Cart.removeItem(${item.id})" aria-label="Remove ${item.name}">✕</button>
         </td>
       </tr>
     `).join('');
@@ -242,28 +264,44 @@ const Cart = {
 
     const encoded = encodeURIComponent(message);
     const url = `https://wa.me/917488092783?text=${encoded}`;
-    window.open(url, '_blank');
+    
+    // Direct redirect on mobile to open WhatsApp app seamlessly without popup blocker
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      window.location.href = url;
+    } else {
+      window.open(url, '_blank');
+    }
   }
 };
 
 // Buy Now WhatsApp message for a single product
 function buyNowWhatsApp(productId, quantity) {
-  const product = products.find(p => p.id === productId);
+  const product = (typeof products !== 'undefined') ? products.find(p => p.id === productId) : null;
   if (!product) return;
 
-  const total = product.price * quantity;
+  const qty = Math.max(1, parseInt(quantity, 10) || 1);
+  const total = product.price * qty;
   let message = 'Namaste Umesh Pooja Store 🙏\n\n';
   message += 'I am interested in ordering:\n\n';
   message += `Product: ${product.name}\n`;
-  message += `Quantity: ${quantity}\n`;
+  message += `Quantity: ${qty}\n`;
   message += `Price: ₹${product.price.toLocaleString('en-IN')}\n`;
   message += `Total: ₹${total.toLocaleString('en-IN')}\n\n`;
   message += 'Please confirm availability.';
 
   const encoded = encodeURIComponent(message);
   const url = `https://wa.me/917488092783?text=${encoded}`;
-  window.open(url, '_blank');
+
+  if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    window.location.href = url;
+  } else {
+    window.open(url, '_blank');
+  }
 }
+
+// Make globally accessible
+window.Cart = Cart;
+window.buyNowWhatsApp = buyNowWhatsApp;
 
 // Initialize cart UI on page load
 document.addEventListener('DOMContentLoaded', () => {

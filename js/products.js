@@ -306,3 +306,7 @@ const categories = [
   "Pooja Kits",
   "Other Pooja Samagri"
 ];
+
+// Ensure global accessibility across all browsers
+window.products = products;
+window.categories = categories;
